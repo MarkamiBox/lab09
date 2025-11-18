@@ -1,14 +1,107 @@
 package it.unibo.mvc;
 
-import javax.swing.JFrame;
+import java.awt.BorderLayout;
+import java.awt.Dimension;
+import java.awt.Toolkit;
+import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
+import java.io.IOException;
+import java.io.PrintStream;
+import java.nio.charset.StandardCharsets;
 
+import javax.swing.JButton;
+import javax.swing.JFileChooser;
+import javax.swing.JFrame;
+import javax.swing.JOptionPane;
+import javax.swing.JPanel;
+import javax.swing.JTextArea;
+import javax.swing.JTextField;
 
 /**
  * A very simple program using a graphical interface.
- * 
  */
 public final class SimpleGUIWithFileChooser {
+    private static final String TITLE = "My second java graphical interface";
+    private final JFrame frame = new JFrame(TITLE);
 
-    private final JFrame frame = new JFrame();
+    /**
+     * Builder of the GUI.
+     * 
+     * @param controller new controller
+     */
+    public SimpleGUIWithFileChooser(final Controller controller) {
+        final JPanel panel = new JPanel();
+        final JTextArea textArea = new JTextArea();
+        final JButton save = new JButton("Save");
 
+        save.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(final ActionEvent ignored) {
+                try (PrintStream ps = new PrintStream(controller.getPath(), StandardCharsets.UTF_8)) {
+                    ps.print(textArea.getText());
+                } catch (final IOException e) {
+                    JOptionPane.showMessageDialog(frame, e, "Error", JOptionPane.ERROR_MESSAGE);
+                    e.printStackTrace(); // NOPMD: allowed as this is just an exercise
+                }
+            }
+        });
+        panel.setLayout(new BorderLayout());
+        panel.add(textArea, BorderLayout.CENTER);
+        panel.add(save, BorderLayout.SOUTH);
+
+        final JPanel secondPanel = new JPanel();
+        final JTextField textField = new JTextField();
+        textField.setText(controller.getPath());
+        textField.setEditable(false);
+        final JButton browse = new JButton("Browse...");
+
+        browse.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(final ActionEvent ignored) {
+                final JFileChooser fileChooser = new JFileChooser();
+                fileChooser.setCurrentDirectory(controller.getFile());
+                final int i = fileChooser.showSaveDialog(frame);
+                switch (i) {
+                    case JFileChooser.APPROVE_OPTION:
+                        controller.setFile(fileChooser.getSelectedFile());
+                        textField.setText(controller.getPath());
+                        break;
+                    case JFileChooser.CANCEL_OPTION:
+                        break;
+                    default:
+                        JOptionPane.showMessageDialog(frame, "Error");
+                        break;
+                }
+            }
+        });
+
+        secondPanel.setLayout(new BorderLayout());
+        secondPanel.add(textField, BorderLayout.CENTER);
+        secondPanel.add(browse, BorderLayout.LINE_END);
+        panel.add(secondPanel, BorderLayout.NORTH);
+        frame.setContentPane(panel);
+        frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+    }
+
+    /**
+     * Display of the GUI.
+     */
+    private void display() {
+        final int value = 5;
+        final Dimension screen = Toolkit.getDefaultToolkit().getScreenSize();
+        final int sw = (int) screen.getWidth();
+        final int sh = (int) screen.getHeight();
+        frame.setSize(sw / value, sh / value);
+        frame.setLocationByPlatform(true);
+        frame.setVisible(true);
+    }
+
+    /**
+     * Main.
+     * 
+     * @param args args
+     */
+    public static void main(final String[] args) {
+        new SimpleGUIWithFileChooser(new Controller()).display();
+    }
 }
